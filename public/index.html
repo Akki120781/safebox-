@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeBox — Ephemeral Sandboxed Code Execution Engine</title>
+  <meta name="description" content="Sub-50ms cold-start, memory/CPU sandboxed execution environment with multi-layer security containment for AI agents.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-shield">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title-wrap">
+          <h1 class="brand-title">SafeBox</h1>
+          <span class="version-tag">v1.0.0-PROD</span>
+          <span class="status-indicator"><span class="pulse-dot"></span>ENGINE ACTIVE</span>
+        </div>
+        <p class="brand-subtitle">Ephemeral Sandboxed Code Execution Engine for AI Agents</p>
+      </div>
+    </div>
+
+    <div class="header-metrics">
+      <div class="metric-card">
+        <span class="metric-label">COLD START</span>
+        <span class="metric-value accent-cyan" id="metric-cold-start">0.4 ms</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">ISOLATION</span>
+        <span class="metric-value accent-emerald" id="metric-isolation">WASM & Cgroups</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">ATTACKS BLOCKED</span>
+        <span class="metric-value accent-amber" id="metric-attacks">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    <!-- Left Workspace: Configuration & Code Editor -->
+    <section class="panel editor-panel">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <span class="panel-icon">⚡</span>
+          <h2>Sandboxed Execution Workspace</h2>
+        </div>
+        
+        <div class="editor-controls">
+          <label for="language-select" class="sr-only">Language</label>
+          <select id="language-select" class="select-input">
+            <option value="javascript">JavaScript (V8 Isolate)</option>
+            <option value="python">Python 3.12 (Process Jail)</option>
+          </select>
+
+          <label for="preset-select" class="sr-only">Attack Defense Preset</label>
+          <select id="preset-select" class="select-input preset-select">
+            <option value="safe-math">✨ Preset: Safe Algorithm (Fibonacci)</option>
+            <option value="infinite-loop">💥 Attack: Infinite Loop (Watchdog Test)</option>
+            <option value="shell-escape">🛑 Attack: Host Shell Escape (child_process)</option>
+            <option value="env-exfiltration">🔒 Attack: Secret Stealing (.env / SSH)</option>
+            <option value="memory-bomb">💣 Attack: Memory Exhaustion Flooding</option>
+            <option value="network-egress">🌐 Attack: Unauthorized Socket Tunnel</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Quota Settings Bar -->
+      <div class="quota-bar">
+        <div class="quota-item">
+          <span class="quota-label">CPU Timeout:</span>
+          <input type="range" id="timeout-range" min="500" max="5000" step="250" value="3000">
+          <span id="timeout-val" class="quota-badge">3000 ms</span>
+        </div>
+        <div class="quota-item">
+          <span class="quota-label">Memory Cap:</span>
+          <input type="range" id="memory-range" min="16" max="256" step="16" value="64">
+          <span id="memory-val" class="quota-badge">64 MB</span>
+        </div>
+        <div class="quota-item toggle-item">
+          <label class="switch-wrap">
+            <input type="checkbox" id="network-toggle">
+            <span class="slider"></span>
+          </label>
+          <span class="quota-label">Allow Egress</span>
+        </div>
+      </div>
+
+      <!-- Editor Area -->
+      <div class="code-wrapper">
+        <div class="line-numbers" id="line-numbers">1</div>
+        <textarea id="code-input" spellcheck="false" placeholder="// Write or paste untrusted agent code here..."></textarea>
+      </div>
+
+      <!-- Action Button Bar -->
+      <div class="editor-footer">
+        <div class="security-chip" id="security-chip">
+          <span class="chip-dot"></span>
+          <span id="security-chip-text">Pre-flight Analyzer: Ready</span>
+        </div>
+        <button id="run-btn" class="primary-btn">
+          <span class="btn-icon">▶</span>
+          <span>Execute in Sandbox</span>
+          <span class="btn-kbd">Ctrl + Enter</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Right Workspace: Real-Time Output & Telemetry -->
+    <section class="panel output-panel">
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="terminal-tab">Console Terminal</button>
+        <button class="tab-btn" data-tab="telemetry-tab">Telemetry & Profiler</button>
+        <button class="tab-btn" data-tab="architecture-tab">Architecture & Threat Model</button>
+        <button class="tab-btn" data-tab="api-tab">Agent REST API</button>
+      </div>
+
+      <!-- Tab 1: Terminal -->
+      <div class="tab-content active" id="terminal-tab">
+        <div class="terminal-box">
+          <div class="terminal-bar">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <div class="terminal-title" id="terminal-status-tag">STATUS: IDLE</div>
+            <button id="clear-term-btn" class="tiny-btn">Clear</button>
+          </div>
+          <pre id="terminal-output" class="terminal-screen">// SafeBox sandbox runtime initialized.
+// Waiting for code execution stream...</pre>
+        </div>
+      </div>
+
+      <!-- Tab 2: Telemetry -->
+      <div class="tab-content" id="telemetry-tab">
+        <div class="telemetry-grid">
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+              <span class="stat-name">Cold Start Latency</span>
+              <span class="stat-number accent-cyan" id="stat-cold-start">--</span>
+              <span class="stat-sub">V8 isolate spinup overhead</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-info">
+              <span class="stat-name">Execution Time</span>
+              <span class="stat-number accent-emerald" id="stat-exec-time">--</span>
+              <span class="stat-sub">Active CPU cycle duration</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">🧠</div>
+            <div class="stat-info">
+              <span class="stat-name">Peak Memory Allocation</span>
+              <span class="stat-number accent-purple" id="stat-memory">--</span>
+              <span class="stat-sub">Quota bounded</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">🛡️</div>
+            <div class="stat-info">
+              <span class="stat-name">Security Containment</span>
+              <span class="stat-number accent-amber" id="stat-verdict">--</span>
+              <span class="stat-sub">Containment policy result</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="violations-box">
+          <h3 class="subhead">Security Audit Log</h3>
+          <div id="violations-list" class="violations-list">
+            <div class="empty-log">No security violations recorded. Sandbox clean.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Architecture & Threat Model -->
+      <div class="tab-content" id="architecture-tab">
+        <div class="arch-card">
+          <h3 class="arch-title">Isolation & Sandbox Architecture</h3>
+          <p class="arch-desc">SafeBox implements a multi-tier defense-in-depth model specifically engineered for untrusted agent-generated code.</p>
+          
+          <div class="diagram-layers">
+            <div class="layer-block layer-1">
+              <div class="layer-header">
+                <span class="layer-num">LAYER 1</span>
+                <strong>Static AST & Heuristic Pre-Execution Analyzer</strong>
+              </div>
+              <p>Traverses AST to reject forbidden syscalls (process spawning, shell invocation, secret paths, credential harvesting) before passing to any engine.</p>
+            </div>
+
+            <div class="layer-arrow">⬇ Passes verified payload or drops attack</div>
+
+            <div class="layer-block layer-2">
+              <div class="layer-header">
+                <span class="layer-num">LAYER 2</span>
+                <strong>Dual-Engine Isolation Virtualization</strong>
+              </div>
+              <p><strong>JavaScript/TypeScript:</strong> Hermetic V8 Isolate with custom virtualized prototype bindings (< 1ms cold start).<br>
+                 <strong>Python:</strong> Ephemeral quarantined process jail with sanitized environment (zero host tokens inherited).</p>
+            </div>
+
+            <div class="layer-arrow">⬇ Active runtime supervision</div>
+
+            <div class="layer-block layer-3">
+              <div class="layer-header">
+                <span class="layer-num">LAYER 3</span>
+                <strong>Hardware Quota Watchdog & Memory Guard</strong>
+              </div>
+              <p>Hardware timers enforce hard timeouts (e.g. 3,000ms), output truncation (512KB max), and force-terminates runaway fork bombs or infinite loops.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Agent REST API -->
+      <div class="tab-content" id="api-tab">
+        <div class="api-doc-box">
+          <h3 class="api-title">Integrate SafeBox with Any AI Agent</h3>
+          <p class="api-desc">Use this simple REST endpoint in your LangChain, AutoGen, CrewAI, or custom LLM harness to execute generated tool code safely.</p>
+          
+          <div class="code-block-header">
+            <span>HTTP POST /api/v1/execute</span>
+            <button id="copy-curl-btn" class="tiny-btn">Copy cURL</button>
+          </div>
+          <pre class="api-snippet" id="curl-snippet">curl -X POST http://localhost:4000/api/v1/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "console.log(40 + 2);",
+    "language": "javascript",
+    "limits": {
+      "timeoutMs": 2500,
+      "memoryLimitMb": 64,
+      "allowNetwork": false
+    }
+  }'</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

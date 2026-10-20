@@ -1,0 +1,38 @@
+{
+  "name": "safebox",
+  "version": "1.0.0",
+  "description": "SafeBox — Ephemeral Sandboxed Code Execution Engine for AI Agents with sub-50ms cold starts, memory/CPU quotas, and security containment",
+  "main": "dist/server/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server/index.js",
+    "dev": "tsx watch src/server/index.ts",
+    "test": "node --test",
+    "benchmark": "tsx src/benchmarks/suite.ts"
+  },
+  "keywords": [
+    "sandbox",
+    "security",
+    "code-execution",
+    "ai-agents",
+    "wasm",
+    "isolation",
+    "telemetry"
+  ],
+  "author": "Akshat Soni",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
