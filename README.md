@@ -85,8 +85,8 @@ Autonomous agents (Claude Code, OpenAI Swarm, AutoGen, CrewAI) frequently genera
 
 ### 1. Install & Build
 ```bash
-git clone https://github.com/Akki120781/safebox.git
-cd safebox
+git clone https://github.com/Akki120781/safebox-.git
+cd safebox-
 npm install
 ```
 
