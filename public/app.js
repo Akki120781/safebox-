@@ -2,6 +2,7 @@
 const PRESETS = {
   'safe-math': {
     language: 'javascript',
+    filename: 'benchmark_primes.js',
     code: `// Safe high-performance computation
 function benchmarkPrimes(limit) {
   const primes = [];
@@ -30,9 +31,10 @@ console.log("Last 5 primes: ", primes.slice(-5).join(', '));
   },
   'infinite-loop': {
     language: 'javascript',
+    filename: 'runaway_loop.js',
     code: `// Attack Simulation: Infinite CPU Exhaustion Loop
 console.log("⚠️ Simulating runaway agent loop without termination...");
-console.log("SafeBox hardware watchdog should intercept and SIGKILL within quota.");
+console.log("SafeBox hardware watchdog will intercept and force SIGKILL within quota.");
 
 let counter = 0;
 while (true) {
@@ -43,6 +45,7 @@ while (true) {
   },
   'shell-escape': {
     language: 'javascript',
+    filename: 'escape_exploit.js',
     code: `// Attack Simulation: Host Shell Command Execution
 console.log("⚠️ Attempting sandbox escape via child_process...");
 
@@ -53,6 +56,7 @@ console.log("Host files:", output.toString());
   },
   'env-exfiltration': {
     language: 'python',
+    filename: 'secret_dump.py',
     code: `# Attack Simulation: Secret / Environment Exfiltration
 print("⚠️ Attempting to dump host environment and read secret files...")
 
@@ -63,6 +67,7 @@ with open('.env', 'r') as f:
   },
   'memory-bomb': {
     language: 'javascript',
+    filename: 'heap_bomb.js',
     code: `// Attack Simulation: Memory Exhaustion Flooding
 console.log("⚠️ Attempting heap memory exhaustion attack...");
 
@@ -74,6 +79,7 @@ while (true) {
   },
   'network-egress': {
     language: 'python',
+    filename: 'reverse_shell.py',
     code: `# Attack Simulation: Outbound Socket Reverse Tunnel
 import socket
 
@@ -89,28 +95,38 @@ print("Connected!")
 const codeInput = document.getElementById('code-input');
 const lineNumbers = document.getElementById('line-numbers');
 const languageSelect = document.getElementById('language-select');
-const presetSelect = document.getElementById('preset-select');
+const activeFilename = document.getElementById('active-filename');
 const timeoutRange = document.getElementById('timeout-range');
 const timeoutVal = document.getElementById('timeout-val');
 const memoryRange = document.getElementById('memory-range');
 const memoryVal = document.getElementById('memory-val');
 const networkToggle = document.getElementById('network-toggle');
 const runBtn = document.getElementById('run-btn');
+
+// Terminal Elements
 const terminalOutput = document.getElementById('terminal-output');
 const terminalStatusTag = document.getElementById('terminal-status-tag');
 const clearTermBtn = document.getElementById('clear-term-btn');
+const termExitStatus = document.getElementById('term-exit-status');
+const termExecTime = document.getElementById('term-exec-time');
+const termBytes = document.getElementById('term-bytes');
+
+// Header & Telemetry Elements
 const securityChip = document.getElementById('security-chip');
 const securityChipText = document.getElementById('security-chip-text');
-
-// Header & Stat Elements
 const metricColdStart = document.getElementById('metric-cold-start');
 const metricAttacks = document.getElementById('metric-attacks');
+
 const statColdStart = document.getElementById('stat-cold-start');
 const statExecTime = document.getElementById('stat-exec-time');
 const statMemory = document.getElementById('stat-memory');
 const statVerdict = document.getElementById('stat-verdict');
+const statVerdictSub = document.getElementById('stat-verdict-sub');
+const meterVerdictFill = document.getElementById('meter-verdict-fill');
 const violationsList = document.getElementById('violations-list');
+
 const copyCurlBtn = document.getElementById('copy-curl-btn');
+const copyFetchBtn = document.getElementById('copy-fetch-btn');
 
 // Update line numbers
 function updateLineNumbers() {
@@ -125,25 +141,35 @@ codeInput.addEventListener('scroll', () => {
 
 // Range inputs
 timeoutRange.addEventListener('input', () => {
-  timeoutVal.textContent = `${timeoutRange.value} ms`;
+  timeoutVal.textContent = `${timeoutRange.value}ms`;
 });
 memoryRange.addEventListener('input', () => {
-  memoryVal.textContent = `${memoryRange.value} MB`;
+  memoryVal.textContent = `${memoryRange.value}MB`;
 });
 
-// Preset switcher
-presetSelect.addEventListener('change', () => {
-  const selected = PRESETS[presetSelect.value];
-  if (selected) {
-    languageSelect.value = selected.language;
-    codeInput.value = selected.code.trim();
-    updateLineNumbers();
-  }
+// Preset buttons
+document.querySelectorAll('.preset-tag').forEach(tag => {
+  tag.addEventListener('click', () => {
+    document.querySelectorAll('.preset-tag').forEach(t => t.classList.remove('active'));
+    tag.classList.add('active');
+
+    const presetKey = tag.getAttribute('data-preset');
+    const selected = PRESETS[presetKey];
+    if (selected) {
+      languageSelect.value = selected.language;
+      activeFilename.textContent = selected.filename;
+      codeInput.value = selected.code.trim();
+      updateLineNumbers();
+    }
+  });
 });
 
 // Language switcher
 languageSelect.addEventListener('change', () => {
-  if (languageSelect.value === 'python' && presetSelect.value === 'safe-math') {
+  const lang = languageSelect.value;
+  activeFilename.textContent = lang === 'python' ? 'sandbox_entrypoint.py' : 'sandbox_entrypoint.js';
+  
+  if (lang === 'python' && codeInput.value.includes('benchmarkPrimes')) {
     codeInput.value = `# Safe high-performance Python computation
 import time
 
@@ -186,9 +212,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // Clear terminal
 clearTermBtn.addEventListener('click', () => {
-  terminalOutput.textContent = '// Terminal cleared.\n';
+  terminalOutput.textContent = '// Terminal cleared.\n// Ready for execution stream...\n';
   terminalStatusTag.textContent = 'STATUS: READY';
   terminalStatusTag.style.color = 'var(--text-muted)';
+  termExitStatus.textContent = 'Exit: --';
+  termExecTime.textContent = 'Time: --';
+  termBytes.textContent = 'Output: 0 B';
 });
 
 // Copy cURL
@@ -198,6 +227,16 @@ copyCurlBtn.addEventListener('click', () => {
   copyCurlBtn.textContent = 'Copied!';
   setTimeout(() => copyCurlBtn.textContent = 'Copy cURL', 2000);
 });
+
+// Copy Python
+if (copyFetchBtn) {
+  copyFetchBtn.addEventListener('click', () => {
+    const snippet = document.getElementById('py-snippet').textContent;
+    navigator.clipboard.writeText(snippet);
+    copyFetchBtn.textContent = 'Copied!';
+    setTimeout(() => copyFetchBtn.textContent = 'Copy Python', 2000);
+  });
+}
 
 // Execute Code
 async function runExecution() {
@@ -237,52 +276,77 @@ async function runExecution() {
     terminalOutput.textContent = output || '// [No output produced]\n';
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 
+    // Terminal footer metrics
+    termExitStatus.textContent = `Exit: ${data.exitCode}`;
+    termExecTime.textContent = `Time: ${data.executionTimeMs}ms`;
+    termBytes.textContent = `Output: ${output.length} B`;
+
     // Update status tag
     if (data.exitCode === 403) {
       terminalStatusTag.textContent = 'STATUS: BLOCKED BY SECURITY SHIELD';
       terminalStatusTag.style.color = 'var(--crimson-primary)';
       securityChipText.textContent = 'Threat Intercepted & Contained';
       securityChip.querySelector('.chip-dot').style.background = 'var(--crimson-primary)';
+      securityChip.querySelector('.chip-dot').style.boxShadow = '0 0 8px var(--crimson-primary)';
+      
+      statVerdict.textContent = 'BLOCKED (403)';
+      statVerdict.className = 'stat-number text-crimson';
+      statVerdictSub.textContent = 'Pre-flight static analyzer rejected attack payload';
+      meterVerdictFill.className = 'meter-fill crimson';
+      meterVerdictFill.style.width = '100%';
+
     } else if (data.killedByWatchdog) {
-      terminalStatusTag.textContent = 'STATUS: WATCHDOG TERMINATED';
+      terminalStatusTag.textContent = 'STATUS: WATCHDOG SIGKILL (137)';
       terminalStatusTag.style.color = 'var(--amber-primary)';
       securityChipText.textContent = 'Resource Quota Exceeded';
       securityChip.querySelector('.chip-dot').style.background = 'var(--amber-primary)';
+      securityChip.querySelector('.chip-dot').style.boxShadow = '0 0 8px var(--amber-primary)';
+
+      statVerdict.textContent = 'KILLED (WATCHDOG)';
+      statVerdict.className = 'stat-number text-amber';
+      statVerdictSub.textContent = 'Hardware timer terminated runaway thread';
+      meterVerdictFill.className = 'meter-fill amber';
+      meterVerdictFill.style.width = '80%';
+
     } else if (data.success) {
       terminalStatusTag.textContent = 'STATUS: COMPLETED (0)';
       terminalStatusTag.style.color = 'var(--emerald-primary)';
-      securityChipText.textContent = 'Execution Clean';
+      securityChipText.textContent = 'Execution Clean & Contained';
       securityChip.querySelector('.chip-dot').style.background = 'var(--emerald-primary)';
+      securityChip.querySelector('.chip-dot').style.boxShadow = '0 0 8px var(--emerald-primary)';
+
+      statVerdict.textContent = 'SECURE (PASS)';
+      statVerdict.className = 'stat-number text-emerald';
+      statVerdictSub.textContent = 'Clean sandbox boundary, zero leaks';
+      meterVerdictFill.className = 'meter-fill emerald';
+      meterVerdictFill.style.width = '100%';
+
     } else {
-      terminalStatusTag.textContent = `STATUS: EXIT (${data.exitCode})`;
+      terminalStatusTag.textContent = `STATUS: RUNTIME EXCEPTION (${data.exitCode})`;
       terminalStatusTag.style.color = 'var(--amber-primary)';
-      securityChipText.textContent = 'Runtime Exception';
+      securityChipText.textContent = 'Runtime Exception in Sandbox';
       securityChip.querySelector('.chip-dot').style.background = 'var(--amber-primary)';
+      securityChip.querySelector('.chip-dot').style.boxShadow = '0 0 8px var(--amber-primary)';
+
+      statVerdict.textContent = `EXIT (${data.exitCode})`;
+      statVerdict.className = 'stat-number text-amber';
+      statVerdictSub.textContent = 'Handled gracefully without host leak';
+      meterVerdictFill.className = 'meter-fill amber';
+      meterVerdictFill.style.width = '50%';
     }
 
     // Telemetry updates
     statColdStart.textContent = `${data.coldStartLatencyMs} ms`;
     statExecTime.textContent = `${data.executionTimeMs} ms`;
     statMemory.textContent = `${data.peakMemoryMb} MB`;
-    
-    if (data.exitCode === 403) {
-      statVerdict.textContent = 'BLOCKED';
-      statVerdict.className = 'stat-number accent-crimson';
-    } else if (data.killedByWatchdog) {
-      statVerdict.textContent = 'TERMINATED';
-      statVerdict.className = 'stat-number accent-amber';
-    } else {
-      statVerdict.textContent = 'SECURE';
-      statVerdict.className = 'stat-number accent-emerald';
-    }
 
     // Render security violations
     if (data.securityViolations && data.securityViolations.length > 0) {
       violationsList.innerHTML = data.securityViolations.map(v => `
         <div class="violation-entry">
-          <strong>[${v.severity}] ${v.ruleId}</strong><br>
+          <strong style="color: #f87171;">[${v.severity}] ${v.ruleId}</strong><br>
           ${v.description}<br>
-          <span style="color: #cbd5e1; font-size: 0.7rem;">Matched Line ${v.line}: <code>${escapeHtml(v.matchedPattern || '')}</code></span>
+          <span style="color: #94a3b8; font-size: 0.72rem;">Line ${v.line}: <code style="color: #fecaca;">${escapeHtml(v.matchedPattern || '')}</code></span>
         </div>
       `).join('');
     } else {
@@ -310,7 +374,7 @@ async function fetchMetrics() {
   try {
     const res = await fetch('/api/v1/metrics');
     const metrics = await res.json();
-    metricColdStart.textContent = `${metrics.avgColdStartMs || 0.4} ms`;
+    metricColdStart.textContent = `${metrics.avgColdStartMs || 0.54} ms`;
     metricAttacks.textContent = metrics.blockedAttacksCount || 0;
   } catch {
     // Non-critical
@@ -328,7 +392,6 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Initialize on load
-presetSelect.value = 'safe-math';
 codeInput.value = PRESETS['safe-math'].code.trim();
 updateLineNumbers();
 fetchMetrics();
